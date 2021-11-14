@@ -30,7 +30,7 @@ void Wypisz(int Board[9]){
         if(j<2){cout << "---------\n";}
     }
 }
-int CoordsToIndex(char crd[]){
+int CoordsToIndex(string crd){
     //Poprawne pola only!
     //a1 => 0
     //c3 => 8 etc
@@ -39,13 +39,13 @@ int CoordsToIndex(char crd[]){
     idx += int(crd[0]) - 97;
     return idx;
 }
-void AssignCoordsFromIndex(char field[], int idx){
-    
+string CoordsFromIndex(int idx){
+    string field;
     field[0] = char(idx%3 + 97);
     field[1] = char(idx/3 + 49);
-
+    return field;
 }
-bool CheckCoordinates(char crd[]){
+bool CheckCoordinates(string crd){
     if(!islower(crd[0]) || !isdigit(crd[1])){
         cout << "Incorrect coordinate format. Please use a smaller case letter followed by a digit.\n";
         return false;
@@ -60,7 +60,7 @@ bool CheckCoordinates(char crd[]){
     }
     return true;
 }
-bool ChangeCoordValue(int BoardFields[], char crd[], int v){
+bool ChangeCoordValue(int BoardFields[], string crd, int v){
     if(!CheckCoordinates(crd)){
         return false;
     }
@@ -98,9 +98,7 @@ int EasyGame(){
     int free = 9;
     bool keepPlaying = true;
 	int currentBoard[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-    char cord[] = "--"; //przyznam, że nie najlepiej radzę sobie z funkcjami zwracającymi stringi
-    //co powinno robić się poprzez zwracanie wskaźników, zwalnianie pamięci, etc - stąd załatwiam
-    //to funkcją typu assign(cord, index) zamiast cord = f(index). Może to zmienię
+    string cord;
     uniform_int_distribution<> coin(0,1);
     uniform_int_distribution<> field(0,9);
     int coinFlip = coin(engine);
@@ -116,31 +114,47 @@ int EasyGame(){
     {
         int n = field(engine);
         currentBoard[n] = 1;
-        AssignCoordsFromIndex(cord, n);
-        cout << "The computer started and drew an 'X' on " << cord << " .\n" << "a---b---c\n\n";
+        cord = CoordsFromIndex(n);
+        cout << "The computer started and drew an 'X' on " << cord << ".\n" << "a---b---c\n\n";
         Wypisz(currentBoard);
         cout << "It's your turn, you play as 'O'. Pick a square from a1 to c3.\n";
         playerValue = 2;
+        free--;
     }
-
+    
+    int computerValue = (playerValue%2)+1;
+    
     while(keepPlaying && free>0){
         if (playerTurn){
             bool keepAsking = true;
             while(keepAsking){
                 cout << "Enter a free square:\n";
-                char pick[2];
+                string pick;
                 cin >> pick;
-                if(pick == "ex"){return 0;}
+                if(pick == "exit"){return 0;} //sekretny kod pozwalający na poddanie się :)
+                if(pick.size() > 2){cout << "Assuming you ment " << pick[0] << pick[1] << ".\n";}
                 keepAsking = !CheckCoordinates(pick);
                 if(!keepAsking){
                     keepAsking = !ChangeCoordValue(currentBoard, pick, playerValue);
                     //naraz sprawdzamy czy miejsce jest zajęte i jeśli nie to je podmieniamy
+                    playerTurn = false;
                 }
             }
             //wyjscie z pętli tylko jeśli podmieniliśmy
-            free--;
+        }
+        else
+        {
+            uniform_int_distribution<> field(0,free);
+            int n = field(engine);
+            int k = NthFreeIndex(currentBoard, n);
+            currentBoard[k] = computerValue;
+            cord = CoordsFromIndex(k);
+            playerTurn = true;
+            cout << "The computer chose" << cord << ".\n";
         }
         Wypisz(currentBoard);
+        free--;
+        cout << free <<"free\n";
     }
     return 0;
 }
