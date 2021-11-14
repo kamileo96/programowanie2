@@ -169,7 +169,7 @@ int main () {
 
     int testBoard[] = {0, 1, 1, 2, 2, 2, 1, 0, 2};
     EasyGame();
-    
+     
     cout << "Thank you. Exciting. Exiting. Goodbye." << endl;
     return 0;
 }
