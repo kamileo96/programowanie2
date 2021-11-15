@@ -1,12 +1,15 @@
 #include <random>
 #include <iostream>
-#include <ctime>
+#include <chrono>
 using namespace std;
 int main() {
-	string pick;
-	cout <<"enter:\n";
-    cin >> pick;
-    if(pick == "ex"){cout << "exiting\n";}
-	cout << "end\n";
+	unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+	default_random_engine engine(seed);
+    uniform_int_distribution<> coin(0,1);
+    int coinFlip;
+    for(int i = 0; i<10; i++){
+		cout << coin(engine) << "\n";
+	}
+	
 	return 0;
 }
