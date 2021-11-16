@@ -231,22 +231,62 @@ int winningSpot(int currentBoard[9], int v){
     }
     return 9;
 }
-int PerfectPlayer(int currentBoard[9], int free, int myV, int hisV){
+int cheeseSpot(int currentBoard[9], int v){
+    for (int i=0; i<9; i++){
+        if(currentBoard[i]==0 && ( (currentBoard[i + 1 - (i%3 == 2)*3]*currentBoard[i - 1 + (i%3 == 0)*3] == 0) && (currentBoard[i + 1 - (i%3 == 2)*3]+currentBoard[i - 1 + (i%3 == 0)*3] == v)) && 
+        ((currentBoard[i + 3 - (i/3 == 2)*9]*currentBoard[i - 3 + (i/3 == 0)*9] == 0) && (currentBoard[i + 3 - (i/3 == 2)*9]+currentBoard[i - 3 + (i/3 == 0)*9] == v)) )
+        {
+            return i;
+        }
+    }
+    return 9;
+}
+int FirstOneAvailable(int currentBoard[9]){
+    for(int i = 0; i<9; i++){
+        if(currentBoard[i] == 0){return i;}
+    }
+    return 9;
+}
+int PerfectPlayer(int currentBoard[9], int freeSquares, int myV, int hisV){
     //sprawdzamy czy można wygrać
     int w1 = winningSpot(currentBoard, myV);
     if(w1<9){return w1;}
     //sprawdzamy czy gdzieś "trzeba" zagrać
     int w2 = winningSpot(currentBoard, hisV);
     if(w2<9){return w2;}
+    //magia
+    if(freeSquares==6 && currentBoard[4] == myV){
+        if((currentBoard[0]==hisV && currentBoard[8]==hisV) || (currentBoard[2]==hisV && currentBoard[6]==hisV))
+        {
+            return 1;
+        }
+        if(currentBoard[0] == hisV){return 8;}
+        if(currentBoard[2] == hisV){return 6;}
+        if(currentBoard[6] == hisV){return 2;}
+        if(currentBoard[8] == hisV){return 0;}
+    }
 
+    //sprawdzamy czy gdzieś można "zcheesować"
+    int w3 = cheeseSpot(currentBoard, myV);
+    if(w3<9){return w3;}
+    //albo czy przeciwnik może nas "zcheesować"
+    //sprawdzamy czy gdzieś można "zcheesować"
+    int w4 = cheeseSpot(currentBoard, hisV);
+    if(w4<9){return w4;}
     //zawsze dobra taktyka:
     if(currentBoard[4] == 0){return 4;}
     
-    if(free == 7){
-
+    if(freeSquares == 7){
+        for(int i = 1; i<8; i+=2){
+            if(currentBoard[i] == hisV){
+                return (i%3 == 1)*(i+1) + (i/3 == 1)*(i-3);
+            }
+        }
+        if(currentBoard[8] == hisV){return 1;}
+        return FirstOneAvailable(currentBoard);
     }
-    cout<< "Playing randomly \n";
-    return 0;
+    if(freeSquares == 8 && currentBoard[4] == hisV){return 0;}
+    return FirstOneAvailable(currentBoard);
 }
 
 
@@ -262,9 +302,9 @@ int HardGame()
     uniform_int_distribution<> coin(0,1);
     uniform_int_distribution<> field(0,9);
     int coinFlip = coin(engine);
+    //tu chyba są duuuże problemy z losowością. ale może już działa.
     bool playerTurn = true;
     int playerValue;
-    cout << "The dice landed on :" << coinFlip <<"\n"; 
     if(coinFlip){
         cout << "a---b---c\n";
         Wypisz(currentBoard);
@@ -273,7 +313,7 @@ int HardGame()
     }
     else
     {
-        int n = field(engine);
+        int n = 4;
         currentBoard[n] = 1;
         cord = CoordsFromIndex(n);
         cout << "The computer started and drew an 'x' on " << cord << ".\n" << "a---b---c\n\n";
@@ -308,13 +348,13 @@ int HardGame()
         else
         {
             currentValue = computerValue;
-            uniform_int_distribution<> field(0,free-1);
-            int n = field(engine);
-            //cout << "Lets pick the " << n << "th free square.\n";
-            int k = NthFreeIndex(currentBoard, n);
-            //cout << "It shall be the " << k << "th square.\n";
-            currentBoard[k] = computerValue;
+            int k = PerfectPlayer(currentBoard, free, computerValue, playerValue);
             cord = CoordsFromIndex(k);
+            if(currentBoard[k] != 0){
+                cout << "Error: computer tried to play " << cord << " but it's occupied. He can't stand the humiliation and gives up.\n";
+                return 1;
+            }
+            currentBoard[k] = computerValue;
             playerTurn = true;
             cout << "The computer chose " << cord << ".\n";
         }
@@ -348,7 +388,7 @@ int PlayingLoop()
         {
             if(diff == "hard" || diff == "Hard" || diff == "h"){cout << "Beginning game on hard mode.\n";}
             else{cout << "Sorry, we don't have that difficulty yet. Beginning game on hard mode indstead.\n";}
-            result = EasyGame();//zmienic na hard
+            result = HardGame();
         }
         score += result;
         cout << result << " = result\n";
@@ -380,22 +420,38 @@ int PlayingLoop()
     return 0;
 }
 int main () {
-    cout << "Welcome to Tic Tac Toe by Kamil Dutkiewicz" << endl;
+    cout << "Welcome to Tic Tac Toe by Kamil Dutkiewicz\nEnter 'START'to play. If you want to see the insturcion, type 'HELP'.";
+    cout << "If you've changed your mind, type 'EXIT' to well... exit.\n";
+    string start = "not-start";
+    while(!(start == "start" || start == "START" || start == "Start"))
+    {
+        if(start == "HELP" || start == "help" || start == "h2p" || start == "Help" || start == "instruction")
+        {
+            cout << "You take turns with the computer, marking a square from:\na1|b1|c1\n--------\na2|b2|c2\n--------\na3|b3|c3\n";
+            cout << "The goal of the game is to mark three of your symbols in a row (vertically, horizontally or diagonally), before the computer does so.\n";
+            cout << "To mark a square, just write its coordinates and press 'ENTER'.\n";
+            cout << "Remember to use lowercase and select a free square.\n";
+            cout << "You will play randomly as either 'x' or 'o', 'x' is the one to start.\n";
+            cout << "Good luck!\n";
+        }
+        if(start == "exit" || start == "EXIT" || start == "Exit" || start == "quit" || start == "Alt+F4"){return 0;}
+        cin >> start;
+    }
 
-    default_random_engine engine{static_cast<long unsigned int>(time(0))};
-    uniform_int_distribution<> abc(0,1);
-    //^do usunięcia 
-
-
-    int testBoard[] = {2, 1, 0, 1, 0, 2, 1, 0, 2};
     int score;
-    //score = PlayingLoop();
-    Wypisz(testBoard);
-    int p = PerfectPlayer(testBoard, 3, 1, 2);
-    testBoard[p] = 1;
-    cout << p << "\n";
-    Wypisz(testBoard);
-     
-    cout << "Thank you. Exciting. Exiting. Goodbye." << endl;
+    score = PlayingLoop();
+    if(score>0){
+        cout << "Well played!\n";
+    }
+    else
+    {
+        if(score == 0){
+            cout << "A tie? Come back soon for another round.\n";
+        }
+        else{
+            cout << "Better luck next time.\n";
+        }
+    }
+    cout << "Thank you for playing. Exciting. Exiting. Goodbye." << endl;
     return 0;
 }
