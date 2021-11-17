@@ -23,6 +23,7 @@ char NumToChar(int num){
 }
 
 void Wypisz(int Board[9]){
+    //wypisuje tablicę zgodnie z legendą funkcji NumToChar
     int i = 0;
     for(int j = 0; j<3; j++){
         for(int k = 0; k<2; k++){
@@ -35,7 +36,7 @@ void Wypisz(int Board[9]){
     }
 }
 int CoordsToIndex(string crd){
-    //Poprawne pola only!
+    //Zakłada poprawne pole
     //a1 => 0
     //c3 => 8 etc
     int idx = 0;
@@ -44,6 +45,7 @@ int CoordsToIndex(string crd){
     return idx;
 }
 string CoordsFromIndex(int idx){
+    //0 => a1 etc
     string field = "nx";
     field[0] = char(idx%3 + 97);
     field[1] = char(idx/3 + 49);
@@ -54,7 +56,7 @@ bool CheckCoordinates(string crd){
         cout << "Incorrect coordinate format. Please use a smaller case letter followed by a digit.\n";
         return false;
         //ten if jest zasadniczo nie potrzebny, bo i tak sprawdzamy czy ascii jest pomiędzy a-c, 1-3, 
-        //ale może warto dać odpowiedni error (w formie couta bo nie opanowaliśmy error handling w c++)
+        //ale może warto dać odpowiedni error (w formie couta)
     }
     int w = int(crd[0]) - 97;
     int k = crd[1]-49;
@@ -65,6 +67,8 @@ bool CheckCoordinates(string crd){
     return true;
 }
 bool ChangeCoordValue(int BoardFields[], string crd, int v){
+    //funkcja zmienia wartości w tabeli, jeśli pole było wolne i podane poprawnie
+    //zwraca boolean o tym czy się udało
     if(!CheckCoordinates(crd)){
         return false;
     }
@@ -98,18 +102,21 @@ int NthFreeIndex(int currentBoard[9], int n){
 bool CheckIfWin(int currentBoard[9], int v){
     for(int i=0; i<3; i++){
         if(currentBoard[i]==v && currentBoard[i+3]==v && currentBoard[i+6]==v){
+            //kolumny
             currentBoard[i] = v*11;
             currentBoard[i+3] = v*11;
             currentBoard[i+6] = v*11;
             return true;
         }
         if(currentBoard[i*3]==v && currentBoard[i*3+1]==v && currentBoard[i*3+2]==v){
+            //wiersze
             currentBoard[i*3] = v*11;
             currentBoard[i*3+1] = v*11;
             currentBoard[i*3+2] = v*11;
             return true;
         }
     }
+    //diagonale
     if(currentBoard[0]==v && currentBoard[4]==v && currentBoard[8]==v){
         currentBoard[0] = v*11;
         currentBoard[4] = v*11;
@@ -127,11 +134,14 @@ bool CheckIfWin(int currentBoard[9], int v){
 
 int EasyGame()
 {
+    //rozgrywka z losowo grającym komputerem.
+    //zwraca -1 dla przegranej, 0 dla remisu i 1 dla wygranej gracza
+
     //random_device rd;
 	//default_random_engine engine(rd()); //nie działa na windowsie
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
 	default_random_engine engine(seed);
-    int free = 9;
+    int free = 9; //liczba wolnych pól. ważne, żeby się zgadzała
     bool keepPlaying = true;
     bool won = false;
 	int currentBoard[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -141,8 +151,8 @@ int EasyGame()
     int coinFlip = coin(engine);
     bool playerTurn = true;
     int playerValue;
-    cout << "The dice landed on :" << coinFlip <<"\n"; 
     if(coinFlip){
+        //player zaczyna
         cout << "a---b---c\n";
         Wypisz(currentBoard);
         cout << "You start and play as 'x'. Pick a square from a1 to c3.\n\n";
@@ -150,6 +160,7 @@ int EasyGame()
     }
     else
     {
+        //komputer zaczyna
         int n = field(engine);
         currentBoard[n] = 1;
         cord = CoordsFromIndex(n);
@@ -160,10 +171,11 @@ int EasyGame()
         free--;
     }
     
-    int computerValue = (playerValue%2)+1;
+    int computerValue = (playerValue%2)+1; //zaczyna zawsze x, czyli 1
     int currentValue;
     while(keepPlaying && free>0){
-        //cout << "There are " << free << " free squares remaining.\n";
+        //pętla rozgrywki
+        
         if (playerTurn){
             bool keepAsking = true;
             currentValue = playerValue;
@@ -189,12 +201,13 @@ int EasyGame()
             int n = field(engine);
             //cout << "Lets pick the " << n << "th free square.\n";
             int k = NthFreeIndex(currentBoard, n);
-            //cout << "It shall be the " << k << "th square.\n";
+            //cout << "It shall be the " << k << "th square.\n"; -- debug
             currentBoard[k] = computerValue;
             cord = CoordsFromIndex(k);
             playerTurn = true;
             cout << "The computer chose " << cord << ".\n";
         }
+        //po ruchu:
         Wypisz(currentBoard);
         free--;
         won = CheckIfWin(currentBoard, currentValue);
@@ -207,6 +220,8 @@ int EasyGame()
     return 0;
 }
 int winningSpot(int currentBoard[9], int v){
+    //zwraca index pierwszego pola które znajdzie, na którym można wygrać stawiając v.
+    //albo 9, jeśli nie ma takiego pola
     for(int i=0; i<3; i++){
         if(((currentBoard[i]==v) + (currentBoard[i+3]==v) + (currentBoard[i+6]==v)) == 2){
             for(int j=i; j<9; j+=3){
@@ -232,6 +247,10 @@ int winningSpot(int currentBoard[9], int v){
     return 9;
 }
 int cheeseSpot(int currentBoard[9], int v){
+    //zwraca index pierwszego pola, na którym można (ang.) zcheesować
+    //czyli uzyskać sytuację w której mamy dwa winning spoty
+    //zakładając że gramy v.
+    //albo 9, jeśli nie ma takiego pola
     for (int i=0; i<9; i++){
         if(currentBoard[i]==0 && ( (currentBoard[i + 1 - (i%3 == 2)*3]*currentBoard[i - 1 + (i%3 == 0)*3] == 0) && (currentBoard[i + 1 - (i%3 == 2)*3]+currentBoard[i - 1 + (i%3 == 0)*3] == v)) && 
         ((currentBoard[i + 3 - (i/3 == 2)*9]*currentBoard[i - 3 + (i/3 == 0)*9] == 0) && (currentBoard[i + 3 - (i/3 == 2)*9]+currentBoard[i - 3 + (i/3 == 0)*9] == v)) )
@@ -270,12 +289,13 @@ int PerfectPlayer(int currentBoard[9], int freeSquares, int myV, int hisV){
     int w3 = cheeseSpot(currentBoard, myV);
     if(w3<9){return w3;}
     //albo czy przeciwnik może nas "zcheesować"
-    //sprawdzamy czy gdzieś można "zcheesować"
     int w4 = cheeseSpot(currentBoard, hisV);
     if(w4<9){return w4;}
-    //zawsze dobra taktyka:
+
+    //zawsze dobra taktyka -- grać środek:
     if(currentBoard[4] == 0){return 4;}
     
+    //znana wszystkim z podstawówki taktyka
     if(freeSquares == 7){
         for(int i = 1; i<8; i+=2){
             if(currentBoard[i] == hisV){
@@ -285,13 +305,20 @@ int PerfectPlayer(int currentBoard[9], int freeSquares, int myV, int hisV){
         if(currentBoard[8] == hisV){return 1;}
         return FirstOneAvailable(currentBoard);
     }
+    //i żeby samemu się na nią nie nadziać:
     if(freeSquares == 8 && currentBoard[4] == hisV){return 0;}
+    //nie musimy się martwić o granie w sytuacji free==9, bo to rozpatruje funkcja rodzic startując
+
+    //jesli nie ma dostępnej taktyki gramy pierwsze wolne pole
+    //można by było dać losowość, ale nie ma takiej potrzeby.
     return FirstOneAvailable(currentBoard);
 }
 
 
 int HardGame()
 {
+    //tak jak easy game, ale nie da się wygrać -- nie ma losowości
+
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
 	default_random_engine engine(seed);
     int free = 9;
@@ -326,7 +353,6 @@ int HardGame()
     int computerValue = (playerValue%2)+1;
     int currentValue;
     while(keepPlaying && free>0){
-        //cout << "There are " << free << " free squares remaining.\n";
         if (playerTurn){
             bool keepAsking = true;
             currentValue = playerValue;
@@ -371,6 +397,9 @@ int HardGame()
 }
 int PlayingLoop()
 {
+    //zwraca bilans punktów (int)
+    //pyta o poziom trudności i o chęć powtórzenia rozgrywki
+    //wbudowane kilka opcji dialogowych :)
     int coinFlip;
     int score = 0;
     double ppoints = 0;
@@ -420,6 +449,7 @@ int PlayingLoop()
     return 0;
 }
 int main () {
+    //start
     cout << "Welcome to Tic Tac Toe by Kamil Dutkiewicz\nEnter 'START'to play. If you want to see the insturcion, type 'HELP'.";
     cout << "If you've changed your mind, type 'EXIT' to well... exit.\n";
     string start = "not-start";
@@ -437,9 +467,11 @@ int main () {
         if(start == "exit" || start == "EXIT" || start == "Exit" || start == "quit" || start == "Alt+F4"){return 0;}
         cin >> start;
     }
-
+    //gra
     int score;
     score = PlayingLoop();
+
+    //wyjście
     if(score>0){
         cout << "Well played!\n";
     }
@@ -453,5 +485,18 @@ int main () {
         }
     }
     cout << "Thank you for playing. Exciting. Exiting. Goodbye." << endl;
+
+    //możnaby dodać:
+    //system("pause"); //na windowsie
+    //system("read"); //na linuxie
+    //żeby było widać wiadomości wyjścia przy odpalaniu bezpośrednio exe
     return 0;
 }
+
+//To chyba wszystko
+//Nie znalazłem już żadnych błędów, nie da się chyba pokonać komputera
+//mogą być drobre zastrzeżenia do struktury kodu, chętnie zrobiłbym bardziej obiektowo
+//największe problemy były z losowością
+//zdecydowałem się na angielski przez brak polskich liter
+//ale najważniejsze że działa
+//17.11.2021 Kamil Dutkiewicz
